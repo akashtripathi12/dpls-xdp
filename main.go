@@ -33,10 +33,10 @@ func main() {
 			log.Fatalf("Failed to load eBPF objects: %v", err)
 		}
 
-		log.Printf("[DPLS Main] Attaching TC to interface %s", *iface)
-		if err := ebpf.AttachTC(*iface); err != nil {
-			log.Fatalf("Failed to attach TC: %v", err)
-		}
+		// log.Printf("[DPLS Main] Attaching TC to interface %s", *iface)
+		// if err := ebpf.AttachTC(*iface); err != nil {
+		// 	log.Fatalf("Failed to attach TC: %v", err)
+		// }
 		
 		log.Printf("[DPLS Main] Attaching CGROUP hooks to /sys/fs/cgroup")
 		if err := ebpf.AttachCgroup(); err != nil {
@@ -55,8 +55,8 @@ func main() {
 	stateMgr := state.NewManager()
 
 	workers := []*api.Worker{
-		{ID: "worker-1", IP: "127.0.0.1", ComputeMultiplier: 1.5, NetworkBandwidth: 100},
-		{ID: "worker-2", IP: "127.0.0.1", ComputeMultiplier: 1.0, NetworkBandwidth: 50},
+		{ID: "worker-1", IP: "172.31.3.35", ComputeMultiplier: 1.5, NetworkBandwidth: 100},
+		{ID: "worker-2", IP: "172.31.3.35", ComputeMultiplier: 1.0, NetworkBandwidth: 50},
 	}
 
 	for _, w := range workers {
@@ -74,7 +74,7 @@ func main() {
 
 	start := time.Now()
 	
-	iterations := 1000
+	iterations := 50000
 	for i := 0; i < iterations; i++ {
 		// Create a unique DAG for each iteration so state isn't confused
 		dagID := fmt.Sprintf("testdag-%d", i)
