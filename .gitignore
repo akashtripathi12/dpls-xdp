@@ -28,3 +28,8 @@ Thumbs.db
 # Ignore all markdown files (like claude.md, gemini.md) EXCEPT the main experiments result
 *.md
 !comprehensive_experiments.md
+
+# Benchmark scratch run logs
+mec_run.log
+mec_err.txt
+mec_out.txt
