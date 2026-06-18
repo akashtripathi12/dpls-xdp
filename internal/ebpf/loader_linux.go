@@ -332,13 +332,14 @@ func GetRetainedPayloadCount(taskID uint32) (uint32, error) {
 	}
 
 	// retained_payload mirrors `struct retained_payload` in tc_bridge.c EXACTLY:
-	//   task_id(4) + remaining_consumers(4) + payload_len(4) + payload[64]
+	//   task_id(4) + remaining_consumers(4) + payload_len(4) + payload[64] + lock(4)
 	// Field order and sizes are critical — cilium/ebpf marshals by struct layout.
 	var payload struct {
 		TaskID             uint32
 		RemainingConsumers uint32
 		PayloadLen         uint32
 		Payload            [retainBytes]byte
+		Lock               uint32 // bpf_spin_lock padding
 	}
 	if err := retentionMap.Lookup(taskID, &payload); err != nil {
 		return 0, nil // Not retained = fully consumed (GC'd) or not a fan-out task

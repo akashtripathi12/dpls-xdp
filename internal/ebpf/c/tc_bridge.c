@@ -110,6 +110,7 @@ struct retained_payload {
     __u32 remaining_consumers;     // Countdown: freed when all consumers have read it
     __u32 payload_len;             // Number of valid bytes in payload[]
     __u8  payload[RETAIN_BYTES];   // The real subtask output bytes (kernel-resident)
+    struct bpf_spin_lock lock;     // Spinlock to safely decrement remaining_consumers
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -281,9 +282,13 @@ int dpls_tc_ingress(struct __sk_buff *skb)
             bpf_printk("TC-BPF: Retained Task=%u (%u bytes) for %u consumers\n",
                        task_id, entry.payload_len, rule->ref_count);
         } else {
-            // SUBSEQUENT consumer: served from kernel memory. Atomic countdown so
-            // concurrent consumers on different CPUs cannot double-free.
-            __u32 left = __sync_sub_and_fetch(&held->remaining_consumers, 1);
+            // SUBSEQUENT consumer: served from kernel memory. 
+            // Use bpf_spin_lock because LLVM BPF backend crashes on __sync_sub_and_fetch
+            bpf_spin_lock(&held->lock);
+            __u32 left = held->remaining_consumers - 1;
+            held->remaining_consumers = left;
+            bpf_spin_unlock(&held->lock);
+
             bpf_printk("TC-BPF: Served Task=%u from kernel, %u consumers left\n",
                        task_id, left);
             if (left == 0) {
