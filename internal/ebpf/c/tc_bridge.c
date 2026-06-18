@@ -145,7 +145,7 @@ struct {
 // The LRU eviction policy ensures the kernel automatically reclaims memory for
 // completed tasks — no explicit garbage collection needed from userspace.
 struct {
-    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 512);   // 512 retained payloads in kernel memory at once
     __type(key, __u32);
     __type(value, struct retained_payload);
