@@ -1,8 +1,10 @@
 # Comprehensive Experimental Analysis: DAG-Aware eBPF Routing vs Standard Kubernetes
 
-This document consolidates the three primary experiments conducted to validate the "Brain and Muscle" architecture. By migrating routing intelligence directly into the eBPF data plane using `cgroup/connect4` hooks, we empirically bypassed the catastrophic latency penalties of the traditional Linux `netfilter` stack.
+This document consolidates the three primary experiments conducted to validate the "Brain and Muscle" architecture. By migrating routing intelligence directly into the eBPF data plane using the `cgroup/connect4` hook (sender-side, intercepting `connect()` before iptables DNAT/conntrack), we empirically bypassed the catastrophic latency penalties of the traditional Linux `netfilter` stack.
 
-Below is the deconstructed data supporting the core thesis defense: **eBPF guarantees `O(1)` latency scaling, regardless of payload density or cluster congestion.**
+> **Terminology — read this first.** In the tables below, **"Baseline"** means *the same DPLS scheduler binary sending real UDP through the unmodified Linux/kube-proxy netfilter stack, with no BPF program attached.* It is **NOT** the in-memory `--mode mock` stub from `loader.go` (which does no kernel networking). The column is labelled "Mock" for historical reasons; read it as **"Baseline = native netfilter path."** **"eBPF"** means the identical binary with the `cgroup/connect4` bypass attached. Every row is a real A/B on the same cluster — only the presence of the BPF program differs.
+
+Below is the deconstructed data supporting the core thesis defense. The precise claim is: **the eBPF path's per-hop latency is effectively payload- and congestion-independent (`O(1)`), whereas the native netfilter baseline grows with payload size and rule-set length — so the measured gain widens as the cluster scales.**
 
 ---
 
@@ -87,4 +89,18 @@ As proven by the `407µs` delta, this stateful memory cloning and header rewriti
 ### Architectural Conclusion
 Our DAG-Aware eBPF architecture eliminates this entire class of latency. By attaching an eBPF program to the `cgroup/connect4` hook, we intercept the application's `connect()` system call *before* the socket buffer (`skb`) is ever fully constructed by the kernel. The eBPF program performs an `O(1)` BPF Map lookup and rewrites the socket's destination natively. 
 
-The architecture does not just "skip the line" by avoiding the `O(N)` iptables list—it completely "avoids the tollbooth" by entirely bypassing the `Conntrack` NAT memory engine. This guarantees `O(1)` routing stability regardless of cluster size or payload density.
+The architecture does not just "skip the line" by avoiding the `O(N)` iptables list—it completely "avoids the tollbooth" by entirely bypassing the `Conntrack` NAT memory engine. This gives `O(1)` routing stability regardless of cluster size or payload density.
+
+---
+
+## Scope of These Experiments (and What They Do *Not* Yet Cover)
+
+To keep the defense honest, the boundary of the evidence above must be stated explicitly:
+
+| Configuration | What it claims | Status in this document |
+|---------------|----------------|--------------------------|
+| **C1 — Baseline** | DPLS over native kube-proxy/netfilter | ✅ Measured (the "Mock/Baseline" columns) |
+| **C2 — eBPF bypass** | Sender-side `cgroup/connect4` bypass of iptables DNAT/conntrack | ✅ Measured (Experiments 1–3) |
+| **C3 — DAG-aware fan-out retention** | Kernel-resident retention of a producer's output, served to multiple consumers, GC'd on last read | ⚠️ **Implemented in `tc_bridge.c` (real payload bytes + atomic ref-count countdown + deterministic delete); not yet benchmarked.** |
+
+The three experiments above all validate **C2** — the sender-side bypass. They do **not** measure **C3**, which is the contribution that distinguishes us from CachOf. The C3 mechanism now exists in code (`retention_map`, `struct retained_payload`, atomic `__sync_sub_and_fetch`, delete-on-zero), but a fan-out DAG benchmark (one producer → N consumers, measuring per-consumer serve latency and re-transmission avoided) still has to be run on the cluster. See `DEFENSE_DOSSIER.md` for the exact experiment design and the receiver-side bypass caveat.

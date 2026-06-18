@@ -45,6 +45,18 @@ func DetachTC() error {
 	return nil
 }
 
+// AttachCgroup mock implementation (real one lives in cgroup_linux.go)
+func AttachCgroup() error {
+	log.Println("[eBPF Mock Bridge] Mock Attached cgroup/connect4 hook")
+	return nil
+}
+
+// DetachCgroup mock implementation
+func DetachCgroup() error {
+	log.Println("[eBPF Mock Bridge] Mock Detached cgroup/connect4 hook")
+	return nil
+}
+
 // LoadBPFObjects mock implementation
 func LoadBPFObjects(elfPath string) error {
 	log.Printf("[eBPF Mock Bridge] Mock Loaded BPF objects from: %s\n", elfPath)

@@ -47,6 +47,10 @@ const maxFanout = 4
 // workerTriggerPort must match WORKER_TRIGGER_PORT in tc_bridge.c
 const workerTriggerPort = 9000
 
+// retainBytes must match RETAIN_BYTES in tc_bridge.c — the number of real
+// subtask-output bytes held in the kernel retention_map for fan-out serving.
+const retainBytes = 64
+
 // kernelDependencyRule mirrors `struct dependency_rule` in tc_bridge.c.
 // Total size: 4 + 4*4 = 20 bytes (no padding due to all uint32 alignment).
 type kernelDependencyRule struct {
@@ -327,15 +331,17 @@ func GetRetainedPayloadCount(taskID uint32) (uint32, error) {
 		return 0, fmt.Errorf("retention_map not initialised")
 	}
 
-	// retained_payload struct layout: task_id(4) + data_word(4) + remaining_consumers(4)
-	// Use a typed struct so cilium/ebpf can correctly marshal/unmarshal the kernel value.
+	// retained_payload mirrors `struct retained_payload` in tc_bridge.c EXACTLY:
+	//   task_id(4) + remaining_consumers(4) + payload_len(4) + payload[64]
+	// Field order and sizes are critical — cilium/ebpf marshals by struct layout.
 	var payload struct {
 		TaskID             uint32
-		DataWord           uint32
 		RemainingConsumers uint32
+		PayloadLen         uint32
+		Payload            [retainBytes]byte
 	}
 	if err := retentionMap.Lookup(taskID, &payload); err != nil {
-		return 0, nil // Not retained = fully consumed or not a fan-out task
+		return 0, nil // Not retained = fully consumed (GC'd) or not a fan-out task
 	}
 	return payload.RemainingConsumers, nil
 }
