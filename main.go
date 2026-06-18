@@ -33,10 +33,10 @@ func main() {
 			log.Fatalf("Failed to load eBPF objects: %v", err)
 		}
 
-		log.Printf("[DPLS Main] Attaching TC to interface %s", *iface)
-		if err := ebpf.AttachTC(*iface); err != nil {
-			log.Fatalf("Failed to attach TC: %v", err)
-		}
+		// log.Printf("[DPLS Main] Attaching TC to interface %s", *iface)
+		// if err := ebpf.AttachTC(*iface); err != nil {
+		// 	log.Fatalf("Failed to attach TC: %v", err)
+		// }
 		
 		log.Printf("[DPLS Main] Attaching CGROUP hooks to /sys/fs/cgroup")
 		if err := ebpf.AttachCgroup(); err != nil {
@@ -56,10 +56,6 @@ func main() {
 
 	workers := []*api.Worker{
 		{ID: "worker-1", IP: "172.31.3.35", ComputeMultiplier: 1.5, NetworkBandwidth: 100},
-		// Note: worker-2 also uses Node B's IP for the benchmark.
-		// This lets us measure real cross-node RTT for BOTH tasks.
-		// The eBPF vault_map still programs dependency rules for the task chain —
-		// what we measure is the overhead of BPF map writes vs pure mock scheduling.
 		{ID: "worker-2", IP: "172.31.3.35", ComputeMultiplier: 1.0, NetworkBandwidth: 50},
 	}
 
@@ -78,7 +74,7 @@ func main() {
 
 	start := time.Now()
 	
-	iterations := 1000
+	iterations := 50000
 	for i := 0; i < iterations; i++ {
 		// Create a unique DAG for each iteration so state isn't confused
 		dagID := fmt.Sprintf("testdag-%d", i)
@@ -93,7 +89,7 @@ func main() {
 			Tasks: map[string]*api.TaskNode{
 				task0ID: {
 					ID:              task0ID,
-					BaseComputation: 50, // Edge computing load (50ms)
+					BaseComputation: 0, // Removed for pure network CPU benchmarking
 					Predecessors:    []string{},
 					Successors: []api.Dependency{
 						{TargetTaskID: task1ID, DataSize: randomDataSize}, // Randomized realistic payload size
@@ -101,7 +97,7 @@ func main() {
 				},
 				task1ID: {
 					ID:              task1ID,
-					BaseComputation: 50, // Edge computing load (50ms)
+					BaseComputation: 0, // Removed for pure network CPU benchmarking
 					Predecessors:    []string{task0ID},
 					Successors:      []api.Dependency{},
 				},
