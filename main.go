@@ -89,7 +89,7 @@ func main() {
 			Tasks: map[string]*api.TaskNode{
 				task0ID: {
 					ID:              task0ID,
-					BaseComputation: 50, // Edge computing load (50ms)
+					BaseComputation: 0, // Removed for pure network CPU benchmarking
 					Predecessors:    []string{},
 					Successors: []api.Dependency{
 						{TargetTaskID: task1ID, DataSize: randomDataSize}, // Randomized realistic payload size
@@ -97,7 +97,7 @@ func main() {
 				},
 				task1ID: {
 					ID:              task1ID,
-					BaseComputation: 50, // Edge computing load (50ms)
+					BaseComputation: 0, // Removed for pure network CPU benchmarking
 					Predecessors:    []string{task0ID},
 					Successors:      []api.Dependency{},
 				},
