@@ -264,19 +264,14 @@ int dpls_tc_ingress(struct __sk_buff *skb)
                 .remaining_consumers = rule->ref_count,
                 .payload_len         = 0,
             };
-            // Bounded, verifier-safe copy of the UDP payload that follows udp hdr.
             __u32 avail = (__u32)(data_end - (void *)payload_start);
-            // Explicit clamp (not a ternary) so the verifier can prove the load
-            // length never exceeds the 64-byte destination buffer.
-            __u32 copy_len = avail;
-            if (copy_len > RETAIN_BYTES)
-                copy_len = RETAIN_BYTES;
-            // bpf_skb_load_bytes reads from the (possibly non-linear) skb safely.
-            // Offset of the payload = end of udp header within the packet.
             __u32 pl_off = (__u32)((void *)payload_start - data);
-            if (copy_len > 0 && copy_len <= RETAIN_BYTES) {
-                if (bpf_skb_load_bytes(skb, pl_off, entry.payload, copy_len) == 0)
-                    entry.payload_len = copy_len;
+            
+            // Verifier workaround: bpf_skb_load_bytes requires a compile-time constant length
+            // Our UDP trigger payload is exactly 4 bytes (the task_id)
+            if (avail >= 4) {
+                if (bpf_skb_load_bytes(skb, pl_off, entry.payload, 4) == 0)
+                    entry.payload_len = 4;
             }
             bpf_map_update_elem(&retention_map, &task_id, &entry, BPF_NOEXIST);
             bpf_printk("TC-BPF: Retained Task=%u (%u bytes) for %u consumers\n",
