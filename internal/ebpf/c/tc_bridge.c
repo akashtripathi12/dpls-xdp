@@ -128,7 +128,7 @@ struct retained_payload {
 // "The brain programs the vault; the muscle reads the vault."
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, 1024);  // Supports up to 1024 concurrent active tasks
+    __uint(max_entries, 65536);  // Increased to 65536 to support 1000s of iterations in c3_bench
     __type(key, __u32);
     __type(value, struct dependency_rule);
 } vault_map SEC(".maps");
