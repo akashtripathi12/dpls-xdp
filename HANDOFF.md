@@ -151,7 +151,14 @@ and payload-independent. Validates CachOf's assumption while showing an *app* ca
 
 ## 6. REMAINING WORK (prioritized backlog for the next session)
 
-### A. Energy comparison against the base papers ⭐ (user explicitly wants this)
+### A. Energy comparison against the base papers ⭐ — ✅ DONE (see `energy_vs_basepaper.md`)
+> Implemented in `energy_vs_basepaper.py`: reproduces CachOf's `ddpg/env.py` cost
+> model with their verbatim parameters, replaces their `exet=0` cache hit and
+> cheap-offload assumptions with our measured eBPF/connect4 costs, and emits
+> delay+energy+EDP across N for CachOf-ideal vs baseline vs eDAG-MEC
+> (`energy_vs_basepaper_plot.png`). Coarse regime: assumption safe; fine-grained
+> dense-edge regime: EDP 15×→141× (sw), up to ~941× (projected HW). The
+> sub-items below are the original plan, now satisfied:
 The base papers report *delay/reward/success-rate*, not real energy. Our existing energy proxy
 (`task-clock`) only compares eBPF-vs-iptables in software. **To do:**
 1. **CachOf-style energy/delay reproduction:** clone `github.com/NetworkCommunication/CachOf`

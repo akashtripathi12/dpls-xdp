@@ -94,8 +94,24 @@ hardware-offload case. EDP improves up to **197× (software)** at N=60k.
 · `crossover_results.csv`/`crossover_plot.png` · `cache_fanout.csv`/`cache_plot.png`
 · `edp_results.csv`/`edp_plot.png` · `run.log`, `xnode.log` (full execution traces).
 
+## §6-A full — energy/EDP on CachOf's OWN cost model (NEW, DONE)
+Cloned `github.com/NetworkCommunication/CachOf`, read its `ddpg/env.py` cost
+model, and built `energy_vs_basepaper.py`: it reproduces CachOf's per-subtask
+delay model **verbatim** (their parameters from `run.py`/`other.py`) and
+replaces the two costs CachOf assumes away — cache-hit serve (`env.py:216`
+`exet=0`) and the O(N) offload tax — with our **measured** data-plane numbers.
+Three arms under their model: CachOf-ideal · baseline (kube-proxy+app cache) ·
+eDAG-MEC (connect4+eBPF cache). Two regimes reported honestly:
+- **CachOf's coarse subtasks (seconds-scale):** makespan ≈ 2.9 s for all arms →
+  their "hit=0" assumption is *safe*; our kernel cache makes it physically true.
+- **Dense-edge fine-grained subtasks:** baseline makespan climbs O(N)
+  (3.5 ms→25.3 ms over N=100→60k) while eDAG tracks CachOf-ideal (flat ~3–4 ms);
+  **EDP improves 15×→141× (software), up to ~941× (projected HW offload)**.
+
+Artifacts: `energy_vs_basepaper.md`, `energy_vs_basepaper_plot.png`,
+`energy_vs_basepaper_{coarse,fine}.csv`.
+
 ## Remaining backlog (not yet done)
-- **§6-A full** — clone & run the CachOf Python sim, overlay our serve cost on its delay model.
 - **§6-C** — Cilium (eBPF kube-proxy replacement) and DPLS-schedule baselines.
 
-*(§6-B done: C3 on TCX + Path-2 kernel fan-out delivery.)*
+*(§6-A done: energy/EDP on CachOf's own model. §6-B done: C3 on TCX + Path-2 kernel fan-out delivery.)*
