@@ -29,6 +29,7 @@ import (
 	"runtime"
 
 	"github.com/cilium/ebpf"
+	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/rlimit"
 
 	"dpls-xdp/pkg/api"
@@ -72,6 +73,10 @@ var (
 	tcEgressProg  *ebpf.Program  // Handle to the dpls_tc_egress BPF program
 	sendmsg4Prog  *ebpf.Program  // Handle to the dpls_cgroup_connect4 BPF program
 	attachedIface string         // Name of the interface TC programs are attached to
+
+	// TCX link handles (modern kernel >= 6.6 attach path; replaces clsact qdisc).
+	tcxIngressLink link.Link
+	tcxEgressLink  link.Link
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -175,39 +180,41 @@ func AttachTC(interfaceName string) error {
 		return fmt.Errorf("[eBPF Loader] BPF program not loaded — call LoadBPFObjects() first")
 	}
 
-	// Step 1: Add the clsact qdisc (provides ingress + egress attachment points).
-	// "clsact" is the special qdisc type that allows TC filters without shaping.
-	// Error is intentionally ignored: "already exists" is acceptable.
-	runTC("qdisc", "add", "dev", interfaceName, "clsact")
-
-	// Step 2: Pin the dpls_tc_ingress program to the BPF filesystem.
-	// Pinning allows re-use and keeps the program alive after this process ends.
-	ingressPinPath := fmt.Sprintf("/sys/fs/bpf/tc_bridge_ingress_%s", interfaceName)
-	if err := tcIngressProg.Pin(ingressPinPath); err != nil {
-		// Already pinned from a previous run — not an error
-		log.Printf("[eBPF Loader] Ingress pin: %v (may already exist)", err)
+	// Modern TCX attach (kernel >= 6.6). Replaces the legacy clsact qdisc + tc
+	// filter path, which FAILS on this kernel ("unknown qdisc"). TCX is the
+	// link-based, ownership-tracked successor and needs no qdisc.
+	iface, err := net.InterfaceByName(interfaceName)
+	if err != nil {
+		return fmt.Errorf("[eBPF Loader] interface %q not found: %w", interfaceName, err)
 	}
 
-	// Step 3: Attach ingress program using tc filter add.
-	// "direct-action" means the program's return value is the filter action.
-	// TC_ACT_OK (0) = pass, TC_ACT_SHOT (2) = drop, TC_ACT_REDIRECT (7) = redirect.
-	if err := runTC("filter", "add", "dev", interfaceName, "ingress",
-		"bpf", "pinned", ingressPinPath, "direct-action"); err != nil {
-		return fmt.Errorf("[eBPF Loader] failed to attach ingress TC filter: %w", err)
+	// Ingress
+	il, err := link.AttachTCX(link.TCXOptions{
+		Interface: iface.Index,
+		Program:   tcIngressProg,
+		Attach:    ebpf.AttachTCXIngress,
+	})
+	if err != nil {
+		return fmt.Errorf("[eBPF Loader] TCX ingress attach failed (kernel >= 6.6?): %w", err)
 	}
+	tcxIngressLink = il
 
-	// Step 4: Attach egress program (optional).
+	// Egress (optional)
 	if tcEgressProg != nil {
-		egressPinPath := fmt.Sprintf("/sys/fs/bpf/tc_bridge_egress_%s", interfaceName)
-		_ = tcEgressProg.Pin(egressPinPath)
-		if err := runTC("filter", "add", "dev", interfaceName, "egress",
-			"bpf", "pinned", egressPinPath, "direct-action"); err != nil {
-			log.Printf("[eBPF Loader] Warning: egress attach failed: %v", err)
+		el, err := link.AttachTCX(link.TCXOptions{
+			Interface: iface.Index,
+			Program:   tcEgressProg,
+			Attach:    ebpf.AttachTCXEgress,
+		})
+		if err != nil {
+			log.Printf("[eBPF Loader] Warning: TCX egress attach failed: %v", err)
+		} else {
+			tcxEgressLink = el
 		}
 	}
 
 	attachedIface = interfaceName
-	log.Printf("[eBPF Loader] Attaching TC BPF program to interface: %s", interfaceName)
+	log.Printf("[eBPF Loader] Attached TC-BPF via TCX to interface: %s", interfaceName)
 	return nil
 }
 
@@ -220,18 +227,15 @@ func DetachTC() error {
 		return nil
 	}
 
-	// Remove all TC filters from ingress and egress
-	_ = runTC("filter", "del", "dev", attachedIface, "ingress")
-	_ = runTC("filter", "del", "dev", attachedIface, "egress")
-
-	// Remove the clsact qdisc entirely
-	if err := runTC("qdisc", "del", "dev", attachedIface, "clsact"); err != nil {
-		log.Printf("[eBPF Loader] Warning: failed to remove clsact qdisc: %v", err)
+	// Detach TCX links (modern attach path) — closing the link removes the hook.
+	if tcxIngressLink != nil {
+		_ = tcxIngressLink.Close()
+		tcxIngressLink = nil
 	}
-
-	// Unpin programs from BPF filesystem
-	_ = os.Remove(fmt.Sprintf("/sys/fs/bpf/tc_bridge_ingress_%s", attachedIface))
-	_ = os.Remove(fmt.Sprintf("/sys/fs/bpf/tc_bridge_egress_%s", attachedIface))
+	if tcxEgressLink != nil {
+		_ = tcxEgressLink.Close()
+		tcxEgressLink = nil
+	}
 
 	// Close kernel object handles
 	if vaultMap != nil {

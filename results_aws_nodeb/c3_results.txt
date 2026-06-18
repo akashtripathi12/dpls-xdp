@@ -1,0 +1,26 @@
+17:14:43.498694 [C3 Bench] Loading BPF objects from internal/ebpf/c/tc_bridge.o
+17:14:43.502188 [C3 Bench] Attaching TC ingress to lo
+17:14:43.610119 [C3 Bench] ───────────────────────────────────────────────────
+17:14:43.610166 [C3 Bench] Sub-benchmark A: ROUTING-ONLY path (ref_count = 1)
+17:14:43.630856 [C3 Bench]   A. Routing-only (ref_count=1)      n=1000  mean=9.407µs    p50=8.947µs    p95=10.532µs   p99=18.823µs
+17:14:43.630871 [C3 Bench] Sub-benchmark B: RETENTION STORE path (ref_count = 4, first hit)
+17:14:43.652129 [C3 Bench]   B. Retention store (ref_count=4)   n=1000  mean=10.108µs   p50=9.767µs    p95=11.189µs   p99=20.194µs
+17:14:43.652135 [C3 Bench] Sub-benchmark C: O(1) fan-out scaling + GC correctness
+17:14:43.700301 [C3 Bench]   C. Fan-out serve path (N=2)        n=2000  mean=6.946µs    p50=6.615µs    p95=8.323µs    p99=12.753µs
+17:14:43.759362 [C3 Bench]   C. Fan-out serve path (N=3)        n=3000  mean=6.89µs     p50=6.49µs     p95=9.51µs     p99=15.068µs
+17:14:43.828089 [C3 Bench]   C. Fan-out serve path (N=4)        n=4000  mean=6.572µs    p50=6.236µs    p95=7.691µs    p99=11.876µs
+17:14:43.828096 [C3 Bench] ===========================================================
+17:14:43.828097 [C3 Bench] SUMMARY
+17:14:43.828098 [C3 Bench] -----------------------------------------------------------
+17:14:43.828099 [C3 Bench] Retention overhead vs routing-only: 701ns (store 10.108µs - routing 9.407µs)
+17:14:43.828101 [C3 Bench] O(1) fan-out scaling (serve-path mean RTT):
+17:14:43.828103 [C3 Bench]    N=2  mean=6.946µs  p95=8.323µs  p99=12.753µs
+17:14:43.828104 [C3 Bench]    N=3  mean=6.89µs  p95=9.51µs  p99=15.068µs
+17:14:43.828106 [C3 Bench]    N=4  mean=6.572µs  p95=7.691µs  p99=11.876µs
+17:14:43.828110 [C3 Bench] Scaling spread across N=2..4: 374ns (smaller => more O(1))
+17:14:43.828111 [C3 Bench] Deterministic GC: 3000/3000 fan-out tasks fully reclaimed (retention_map empty after last consumer)
+17:14:43.828112 [C3 Bench] ===========================================================
+17:14:43.828113 [C3 Bench] Interpretation:
+17:14:43.828114 [C3 Bench]  - overhead ~ tens of microseconds or less => retention is cheap (C5).
+17:14:43.828114 [C3 Bench]  - scaling spread small => per-access cost is O(1) in fan-out degree.
+17:14:43.828115 [C3 Bench]  - GC = 3000/3000 => atomic ref-count + delete-on-zero works on a real kernel.
