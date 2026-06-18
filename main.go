@@ -55,12 +55,8 @@ func main() {
 	stateMgr := state.NewManager()
 
 	workers := []*api.Worker{
-		{ID: "worker-1", IP: "172.31.3.35", ComputeMultiplier: 1.5, NetworkBandwidth: 100},
-		// Note: worker-2 also uses Node B's IP for the benchmark.
-		// This lets us measure real cross-node RTT for BOTH tasks.
-		// The eBPF vault_map still programs dependency rules for the task chain —
-		// what we measure is the overhead of BPF map writes vs pure mock scheduling.
-		{ID: "worker-2", IP: "172.31.3.35", ComputeMultiplier: 1.0, NetworkBandwidth: 50},
+		{ID: "worker-1", IP: "127.0.0.1", ComputeMultiplier: 1.5, NetworkBandwidth: 100},
+		{ID: "worker-2", IP: "127.0.0.1", ComputeMultiplier: 1.0, NetworkBandwidth: 50},
 	}
 
 	for _, w := range workers {
