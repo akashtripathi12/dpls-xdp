@@ -1,0 +1,118 @@
+########## BOOTSTRAP START Thu Jun 18 16:57:08 UTC 2026 ##########
+===== 0. PRE-CLEAN (kill stray :9000 listeners + stale net state) =====
+=== TRAP: restoring clean network state ===
+nat lines now: 4
+===== 1. INSTALL TOOLCHAIN =====
+go: go version go1.22.2 linux/amd64 | clang: Ubuntu clang version 18.1.3 (1ubuntu1)
+===== 2. UPDATE REPO TO LATEST =====
+Your branch is up to date with 'upstream/main'.
+19082c0 Merge pull request #4 from akashtripathi12/main
+===== 3. RUN FULL SUITE (timeout-guarded) =====
+
+========== ENV CHECK ==========
+6.17.0-1012-aws
+go version go1.22.2 linux/amd64
+Ubuntu clang version 18.1.3 (1ubuntu1)
+
+========== COMPILE eBPF OBJECTS ==========
+  built internal/ebpf/c/connect4.o
+  built internal/ebpf/c/xdp_lookup.o
+  built internal/ebpf/c/tc_bridge.o
+
+========== 1/4 CROSSOVER  (iptables O(N) vs XDP O(1)) ==========
+16:57:12 N=0       iptables=    5.18 us  xdp=    5.41 us  gap=  -0.23 us
+16:57:12 N=100     iptables=    5.68 us  xdp=    5.33 us  gap=  +0.35 us
+16:57:12 N=500     iptables=    7.72 us  xdp=    5.35 us  gap=  +2.37 us
+16:57:12 N=1000    iptables=   10.21 us  xdp=    5.32 us  gap=  +4.89 us
+16:57:12 N=2000    iptables=   15.07 us  xdp=    5.41 us  gap=  +9.67 us
+16:57:12 N=5000    iptables=   29.08 us  xdp=    5.49 us  gap= +23.59 us
+16:57:13 N=10000   iptables=   54.82 us  xdp=    5.38 us  gap= +49.44 us
+16:57:13 N=20000   iptables=  102.25 us  xdp=    5.39 us  gap= +96.87 us
+16:57:14 N=40000   iptables=  204.65 us  xdp=    5.50 us  gap=+199.15 us
+16:57:14 =========================================================
+16:57:14 CSV written to crossover_results.csv
+16:57:14 CROSSOVER: eBPF/XDP O(1) overtakes iptables O(N) at N>=100 services
+16:57:14 At N=40000:  iptables=204.7us  xdp=5.5us  => XDP is 37.2x faster, gap=199.2us
+16:57:14 =========================================================
+iptables fit: 4.968 ns/rule + 4.90 us base
+xdp mean: 5.40 us (std 0.06)
+saved crossover_plot.png
+
+========== 2/4 MEC MULTI-NODE  (connect4 O(1) vs kube-proxy O(N)) ==========
+16:57:16 [worker] echo up on 10.200.0.2:9000
+16:57:16 [sanity] direct cross-node RTT to worker = 101.84 us
+16:57:16 N=0       kube-proxy(DNAT+O(N))=   21.19 us   eBPF connect4 O(1)=   20.93 us   gap=   +0.26 us  (1.0x)
+16:57:17 N=100     kube-proxy(DNAT+O(N))=   21.39 us   eBPF connect4 O(1)=   21.05 us   gap=   +0.35 us  (1.0x)
+16:57:17 N=500     kube-proxy(DNAT+O(N))=   24.14 us   eBPF connect4 O(1)=   20.99 us   gap=   +3.15 us  (1.1x)
+16:57:17 N=1000    kube-proxy(DNAT+O(N))=   26.39 us   eBPF connect4 O(1)=   19.66 us   gap=   +6.72 us  (1.3x)
+16:57:17 N=2000    kube-proxy(DNAT+O(N))=   29.85 us   eBPF connect4 O(1)=   22.04 us   gap=   +7.81 us  (1.4x)
+16:57:18 N=5000    kube-proxy(DNAT+O(N))=   38.62 us   eBPF connect4 O(1)=   21.46 us   gap=  +17.16 us  (1.8x)
+16:57:18 N=10000   kube-proxy(DNAT+O(N))=   52.57 us   eBPF connect4 O(1)=   20.65 us   gap=  +31.92 us  (2.5x)
+16:57:19 N=20000   kube-proxy(DNAT+O(N))=   81.27 us   eBPF connect4 O(1)=   21.83 us   gap=  +59.44 us  (3.7x)
+16:57:21 N=40000   kube-proxy(DNAT+O(N))=  119.60 us   eBPF connect4 O(1)=   20.78 us   gap=  +98.83 us  (5.8x)
+16:57:23 N=60000   kube-proxy(DNAT+O(N))=  151.19 us   eBPF connect4 O(1)=   21.21 us   gap= +129.98 us  (7.1x)
+16:57:23 =========================================================
+16:57:23 CSV -> mec_results.csv
+16:57:23 At N=60000:  kube-proxy=151.2us  eBPF=21.2us  => 7.1x faster, gap=130.0us
+16:57:23 =========================================================
+kube-proxy fit: 2.219 ns/rule + 25.9 us  | eBPF mean 21.1us std 0.6
+saved mec_plot.png
+
+========== 3/4 CACHE vs CachOf  (eBPF kernel cache vs app cache) ==========
+16:57:24 === Sweep A: fan-out (payload=1024B) ===
+16:57:24 N=1    app-cache=   11.21 us   eBPF-cache=   1.53 us   (7.3x)
+16:57:24 N=2    app-cache=   20.14 us   eBPF-cache=   2.05 us   (9.8x)
+16:57:24 N=4    app-cache=   40.22 us   eBPF-cache=   3.11 us   (13.0x)
+16:57:24 N=8    app-cache=   80.17 us   eBPF-cache=   5.24 us   (15.3x)
+16:57:24 N=16   app-cache=  160.59 us   eBPF-cache=   9.69 us   (16.6x)
+16:57:25 N=32   app-cache=  322.95 us   eBPF-cache=  18.24 us   (17.7x)
+16:57:26 N=64   app-cache=  651.88 us   eBPF-cache=  35.92 us   (18.1x)
+16:57:26 === Sweep B: payload size (fan-out N=8) ===
+16:57:27 D=64     app-cache=   79.21 us   eBPF-cache=   5.33 us   (14.9x)
+16:57:27 D=256    app-cache=   79.77 us   eBPF-cache=   5.30 us   (15.1x)
+16:57:27 D=512    app-cache=   80.99 us   eBPF-cache=   5.34 us   (15.2x)
+16:57:27 D=1024   app-cache=   80.65 us   eBPF-cache=   5.25 us   (15.4x)
+16:57:27 D=1400   app-cache=   80.70 us   eBPF-cache=   5.35 us   (15.1x)
+16:57:27 CSVs written: cache_fanout.csv, cache_payload.csv
+app per-consumer ~10.17 us  | ebpf per-consumer ~0.55 us
+saved cache_plot.png
+
+========== 4/4 ENERGY / EDP  (HANDOFF §6-A — derived from measured CSVs) ==========
+=== MODEL FITS (from measured CSVs) ===
+  kube-proxy offload : 2.22 ns/svc * N + 25.9 us   [O(N), measured]
+  connect4  offload  : 21.1 us flat                       [O(1), measured]
+  app cache serve    : 10.18 us/consumer (+-0.7)    [measured]
+  eBPF cache serve   : 0.55 us/consumer (+0.9)    [measured]
+  P_active           : 15.0 W  | HW offload dp frac 0.85 [MODELED]
+
+=== EDP HEAD-TO-HEAD (wrote /home/ubuntu/dpls-xdp/edp_results.csv) ===
+      N   F  delay base  delay eDAG  EDP imp sw  EDP imp hw
+    100   1      35.5us      22.5us       2.49x      16.57x
+    500   1      36.4us      22.5us       2.61x      17.41x
+   1000   1      37.5us      22.5us       2.77x      18.49x
+   2000   2      49.9us      23.1us       4.68x      31.19x
+   5000   5      87.1us      24.7us      12.42x      82.81x
+  10000  10     149.1us      27.4us      29.51x     196.74x
+  20000  20     273.0us      32.9us      68.87x     459.15x
+  40000  40     520.9us      43.8us     141.36x     942.41x
+  60000  60     768.8us      54.7us     197.34x    1315.62x
+
+saved /home/ubuntu/dpls-xdp/edp_plot.png
+
+========== DONE — artifacts ==========
+-rw-rw-r-- 1 ubuntu ubuntu 153825 Jun 18 16:57 cache_plot.png
+-rw-rw-r-- 1 ubuntu ubuntu 127469 Jun 18 16:57 crossover_plot.png
+-rw-rw-r-- 1 ubuntu ubuntu    247 Jun 18 16:57 crossover_results.csv
+-rw-rw-r-- 1 ubuntu ubuntu    247 Jun 18 16:57 crossover_results.csv
+-rw-r--r-- 1 root   root   145470 Jun 18 16:57 edp_plot.png
+-rw-r--r-- 1 root   root      981 Jun 18 16:57 edp_results.csv
+-rw-r--r-- 1 root   root      981 Jun 18 16:57 edp_results.csv
+-rw-rw-r-- 1 ubuntu ubuntu  10910 Jun 18 16:38 fanout_results.csv
+-rw-rw-r-- 1 ubuntu ubuntu 139063 Jun 18 16:57 mec_plot.png
+-rw-rw-r-- 1 ubuntu ubuntu    364 Jun 18 16:57 mec_results.csv
+-rw-rw-r-- 1 ubuntu ubuntu 118917 Jun 18 16:38 pipeline_results.csv
+Pull these PNGs back with scp to view.
+===== run_all.sh exit code: 0 =====
+########## BOOTSTRAP DONE Thu Jun 18 16:57:28 UTC 2026 ##########
+=== TRAP: restoring clean network state ===
+nat lines now: 4

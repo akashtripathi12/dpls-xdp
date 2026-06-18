@@ -1,0 +1,21 @@
+########## XNODE START Thu Jun 18 17:05:36 UTC 2026 worker=172.31.4.205 ##########
+go: downloading github.com/cilium/ebpf v0.13.2
+go: downloading golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2
+go: downloading golang.org/x/sys v0.18.0
+build OK
+17:05:44 [sanity] remote worker 172.31.4.205 reachable across VPC ✓
+17:05:45 N=0       kube-proxy(DNAT+O(N))=  100.61 us   eBPF connect4 O(1)=   99.32 us   gap=   +1.28 us  (1.01x)
+17:05:45 N=100     kube-proxy(DNAT+O(N))=   99.06 us   eBPF connect4 O(1)=   95.52 us   gap=   +3.54 us  (1.04x)
+17:05:46 N=500     kube-proxy(DNAT+O(N))=   98.65 us   eBPF connect4 O(1)=   94.85 us   gap=   +3.80 us  (1.04x)
+17:05:47 N=1000    kube-proxy(DNAT+O(N))=  101.13 us   eBPF connect4 O(1)=   91.88 us   gap=   +9.25 us  (1.10x)
+17:05:47 N=2000    kube-proxy(DNAT+O(N))=  101.63 us   eBPF connect4 O(1)=   91.24 us   gap=  +10.38 us  (1.11x)
+17:05:48 N=5000    kube-proxy(DNAT+O(N))=  107.55 us   eBPF connect4 O(1)=   87.64 us   gap=  +19.91 us  (1.23x)
+17:05:49 N=10000   kube-proxy(DNAT+O(N))=  116.89 us   eBPF connect4 O(1)=   90.72 us   gap=  +26.17 us  (1.29x)
+17:05:50 N=20000   kube-proxy(DNAT+O(N))=  141.11 us   eBPF connect4 O(1)=   91.46 us   gap=  +49.65 us  (1.54x)
+17:05:52 N=40000   kube-proxy(DNAT+O(N))=  186.67 us   eBPF connect4 O(1)=   87.20 us   gap=  +99.47 us  (2.14x)
+17:05:55 N=60000   kube-proxy(DNAT+O(N))=  211.15 us   eBPF connect4 O(1)=   82.95 us   gap= +128.21 us  (2.55x)
+17:05:55 wrote mec_xnode_results.csv
+===== mec_xnode exit: 0 =====
+########## XNODE DONE Thu Jun 18 17:05:55 UTC 2026 ##########
+=== TRAP: clean nat + route ===
+nat lines now: 4
