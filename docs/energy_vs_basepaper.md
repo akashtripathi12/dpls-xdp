@@ -3,7 +3,8 @@
 > Closes the last open item of HANDOFF §6-A.1 and the RESULTS_AWS.md backlog
 > ("clone & run the CachOf sim, overlay our serve cost on its delay model").
 > Script: `energy_vs_basepaper.py` → `energy_vs_basepaper_{coarse,fine}.csv` +
-> `energy_vs_basepaper_plot.png`. Reproduce: `python3 energy_vs_basepaper.py`.
+> `energy_vs_basepaper_plot.png` (all in `results/`). Reproduce:
+> `python3 analysis/energy_vs_basepaper.py`.
 
 ## What this adds over `analyze_energy_edp.py`
 
@@ -43,9 +44,9 @@ two free-lunch assumptions, quoted from `ddpg/env.py`:
 3. **eDAG-MEC** — CachOf's exact policy on **our** substrate:
    `cgroup/connect4` O(1) offload + eBPF kernel cache O(1) serve.
 
-Measured data-plane fits injected (from our real benchmark CSVs):
-- offload: kube-proxy **4.62 ns/svc·N + 48 µs floor** (O(N)) vs connect4 **39.4 µs flat** (O(1)) — `mec_results.csv`
-- cache serve: app **11.67 µs/consumer** (O(N)) vs eBPF **0.52 µs/consumer** (O(1)) — `cache_fanout.csv`
+Measured data-plane fits injected (from our real **AWS-hardware** benchmark CSVs):
+- offload: kube-proxy **4.62 ns/svc·N + 48 µs floor** (O(N)) vs connect4 **21.1 µs flat** (O(1)) — `results/mec_results.csv`
+- cache serve: app **10.18 µs/consumer** (O(N)) vs eBPF **0.55 µs/consumer** (O(1)) — `results/cache_fanout.csv`
 
 Energy is **MODELED**: `E = P_active(15 W) × active_CPU_time`; a projected
 SmartNIC case moves `HW_OFFLOAD_DATAPLANE_FRAC = 0.85` of the data-plane CPU
@@ -68,11 +69,11 @@ diverge sharply:
 
 | N (services) | F | makespan baseline | makespan eDAG | EDP improvement (sw) | EDP (proj. HW) |
 |---:|---:|---:|---:|---:|---:|
-| 100 | 1 | 3.48 ms | 2.91 ms | **14.98×** | 99.8× |
-| 1 000 | 1 | 3.47 ms | 2.94 ms | **14.80×** | 98.7× |
-| 10 000 | 10 | 6.83 ms | 3.10 ms | **44.41×** | 296× |
-| 40 000 | 40 | 17.94 ms | 3.58 ms | **109.52×** | 730× |
-| 60 000 | 60 | 25.28 ms | 3.96 ms | **141.22×** | 941× |
+| 100 | 1 | 3.23 ms | 2.96 ms | **7.02×** | 46.8× |
+| 1 000 | 1 | 3.21 ms | 2.93 ms | **7.04×** | 47.0× |
+| 10 000 | 10 | 6.13 ms | 3.12 ms | **31.11×** | 207× |
+| 40 000 | 40 | 15.78 ms | 3.63 ms | **77.73×** | 518× |
+| 60 000 | 60 | 22.24 ms | 3.95 ms | **102.03×** | 680× |
 
 eDAG-MEC tracks **CachOf-ideal** (flat) while the real baseline climbs O(N):
 the kernel substrate is what keeps CachOf's "free hit / cheap offload"

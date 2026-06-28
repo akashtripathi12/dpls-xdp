@@ -157,7 +157,7 @@ and payload-independent. Validates CachOf's assumption while showing an *app* ca
 > cheap-offload assumptions with our measured eBPF/connect4 costs, and emits
 > delay+energy+EDP across N for CachOf-ideal vs baseline vs eDAG-MEC
 > (`energy_vs_basepaper_plot.png`). Coarse regime: assumption safe; fine-grained
-> dense-edge regime: EDP 15×→141× (sw), up to ~941× (projected HW). The
+> dense-edge regime: EDP 7×→102× (sw), up to ~680× (projected HW). The
 > sub-items below are the original plan, now satisfied:
 The base papers report *delay/reward/success-rate*, not real energy. Our existing energy proxy
 (`task-clock`) only compares eBPF-vs-iptables in software. **To do:**

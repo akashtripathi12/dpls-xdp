@@ -1,9 +1,11 @@
 import csv, numpy as np, matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import os as _os
+R = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "results")
 
 N, base, ebpf = [], [], []
-with open("mec_results.csv") as f:
+with open(_os.path.join(R,"mec_results.csv")) as f:
     for r in csv.DictReader(f):
         N.append(int(r["N"])); base.append(float(r["kubeproxy_us"])); ebpf.append(float(r["ebpf_connect4_us"]))
 N=np.array(N); base=np.array(base); ebpf=np.array(ebpf)
@@ -25,4 +27,4 @@ ax1.annotate(f"kube-proxy ≈ {A[0]*1000:.1f} ns/svc × N + DNAT\nconnect4 ≈ {
     fontsize=10, bbox=dict(boxstyle="round",fc="#eafaf1",ec="#27ae60"))
 fig.suptitle("eDAG-MEC: emulated multi-node edge cluster — connect4 O(1) bypass vs kube-proxy O(N) DNAT",
     fontsize=13, fontweight="bold")
-fig.tight_layout(); fig.savefig("mec_plot.png",dpi=140); print("saved mec_plot.png")
+fig.tight_layout(); fig.savefig(_os.path.join(R,"mec_plot.png"),dpi=140); print("saved", _os.path.join(R,"mec_plot.png"))

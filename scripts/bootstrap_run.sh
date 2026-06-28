@@ -5,7 +5,7 @@
 # starving the box's own SSH egress). Here a trap + timeout guarantee nat is
 # always flushed, so the box can never cut itself off permanently.
 set -uo pipefail
-cd "$HOME/dpls-xdp"
+cd "$(dirname "$0")/.."                 # repo root (script lives in scripts/)
 
 cleanup() {
   echo "=== TRAP: restoring clean network state ==="
@@ -39,7 +39,7 @@ git log --oneline -1
 
 echo "===== 3. RUN FULL SUITE (timeout-guarded) ====="
 # 25-min ceiling: if any bench hangs at high N, timeout fires, trap flushes nat.
-sudo timeout 1500 bash run_all.sh
+sudo timeout 1500 bash scripts/run_all.sh
 RC=$?
 echo "===== run_all.sh exit code: $RC ====="
 
