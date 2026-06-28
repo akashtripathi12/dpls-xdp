@@ -16,27 +16,47 @@ Linux/kube-proxy path is **O(N)**.
   a kernel hash map and serves it to its DAG consumers without re-sending it
   through the full stack per consumer.
 
-## What is actually new
+## Contribution & Novelty
 
-The individual kernel mechanisms already exist (Cilium uses `connect4`; BMC put
-a cache in eBPF; Electrode uses `bpf_clone_redirect`). The contributions here
-are a **composition** and **one new policy**:
+This is a **systems contribution**: we did not invent a new offloading or caching
+*algorithm*, and we do not claim to beat the base papers' decision logic. We
+**re-purpose existing kernel mechanisms in a new arrangement** for a problem they
+were not built for — dependency-aware MEC offloading — and we add **one new
+policy**. A dedicated prior-art search (against Cilium, BMC, Electrode, cache_ext,
+and the MEC literature) returned a verdict of **"partially anticipated,"** which
+maps cleanly onto the three parts of the system:
 
-1. **First physical eBPF substrate** for the CachOf/DPLS offloading+caching model
-   — they simulate; we run it on real kernels and measure the gap they assumed away.
-2. **DAG-aware deterministic garbage collection** *(the novel element; a prior-art
-   search found no precedent)*. Generic in-kernel caches evict by least-recently-used
-   or time-to-live — in a dependency graph that is not just slower but **incorrect**,
-   because evicting a result a consumer still needs stalls the graph. Instead, each
-   cached entry carries a **reference count equal to its number of DAG consumers**;
-   the count is atomically decremented on each consumer read and the entry is
-   deleted the instant it hits zero. Eviction becomes a **correctness guarantee**
-   driven by the task topology, not a heuristic — measured as deterministic GC
-   reclaiming **3000/3000** entries with **no leaks and no premature eviction**.
+| Part | Mechanism | Prior art? | Our contribution |
+|---|---|---|---|
+| **1. Sender bypass** (`cgroup/connect4` O(1) rewrite) | exists | **Already done** — Cilium/Calico use it for kube-proxy replacement | we apply + confirm it for the MEC offload hop |
+| **2. Receiver retention + kernel fan-out** (`tc`/TCX map + `bpf_clone_redirect`) | exists | **Partially anticipated** — BMC (in-kernel cache), Electrode (clone-redirect) | first use as an *intermediate-result retention cache for dependent (DAG) subtasks* |
+| **3. DAG-aware deterministic GC** | **new policy** | **Appears novel** — no precedent found | the genuine contribution (below) |
 
-> Honest scope: this is a **substrate, not an algorithm** — we run CachOf's *own*
-> offload+cache policy on our data plane; we do not claim to beat its DRL decision
-> quality. The right story is *combine*. See [docs/](docs/) for full caveats.
+**The novel element — DAG-aware deterministic garbage collection.** Generic
+in-kernel caches evict by least-recently-used or time-to-live. In a dependency
+graph that is not merely suboptimal but **incorrect**: evicting a result a
+downstream consumer still needs stalls or breaks the execution. Instead, each
+cached entry carries a **reference count equal to its number of DAG consumers**;
+the count is decremented atomically on each consumer read and the entry is deleted
+the instant it reaches zero. This turns cache eviction from a *performance
+heuristic* into a **correctness guarantee driven by the task topology** — measured
+as deterministic GC reclaiming **3000/3000** entries with **no leaks and no
+premature eviction**, all within the loop-bounded eBPF verifier.
+
+Beyond the policy, the work also delivers the **first physical eBPF substrate** for
+the CachOf/DPLS model: those papers *simulate* and assume the data plane is free;
+we run it on real kernels and **measure** the gap they assumed away (§ Results).
+
+**The single sharpest objection** is "BMC already proved eBPF can be a kernel
+cache — you just swapped its LRU for a ref-count." The defense: BMC is a
+*stateless* cache where a wrong eviction merely triggers a re-fetch; here a wrong
+eviction is a *correctness failure*, so the DAG-driven, race-free, leak-free
+lifecycle of variable-length payloads under concurrent reads is the substantive
+work, not the atomic decrement itself.
+
+> Honest scope: **substrate, not algorithm** — we run CachOf's *own* offload+cache
+> policy on our data plane; we do not beat its DRL decision quality. The right
+> story is *combine*. See [docs/](docs/) for full caveats.
 
 ## Results (measured on a real 3-node AWS EC2 cluster)
 
