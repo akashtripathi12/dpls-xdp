@@ -1,8 +1,10 @@
 import csv, sys, numpy as np, matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import os as _os
+R = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "results")
 
-src = sys.argv[1] if len(sys.argv) > 1 else "mec_xnode_results.csv"
+src = sys.argv[1] if len(sys.argv) > 1 else _os.path.join(R,"mec_xnode_results.csv")
 N, base, ebpf = [], [], []
 with open(src) as f:
     for r in csv.DictReader(f):
@@ -26,4 +28,4 @@ ax1.annotate(f"kube-proxy ≈ {A[0]*1000:.1f} ns/svc × N + {A[1]:.0f} µs\nconn
     fontsize=10, bbox=dict(boxstyle="round",fc="#eafaf1",ec="#27ae60"))
 fig.suptitle("eDAG-MEC §6-D: REAL cross-VM edge cluster — connect4 O(1) vs kube-proxy O(N) DNAT",
     fontsize=13, fontweight="bold")
-fig.tight_layout(); fig.savefig("mec_xnode_plot.png",dpi=140); print("saved mec_xnode_plot.png")
+fig.tight_layout(); fig.savefig(_os.path.join(R,"mec_xnode_plot.png"),dpi=140); print("saved", _os.path.join(R,"mec_xnode_plot.png"))

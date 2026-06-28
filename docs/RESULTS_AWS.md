@@ -11,8 +11,9 @@
 - **OS / kernel:** Ubuntu 24.04.4 LTS, **kernel 6.17-aws**, cgroup v2 unified.
 - **Toolchain:** clang 18, Go 1.22.2, cilium/ebpf v0.13.2, libbpf 1.3.
 - All three eBPF objects (`connect4.o`, `xdp_lookup.o`, `tc_bridge.o`) compile clean.
-- Reproduce: `sudo bash run_all.sh` (single-host suite) and
-  `bash run_xnode.sh <worker_ip>` (cross-VM). Both are detached + self-cleaning.
+- Reproduce: `sudo bash scripts/run_all.sh` (single-host suite) and
+  `bash scripts/run_xnode.sh <worker_ip>` (cross-VM). Both are detached + self-cleaning.
+  All artifacts land in `results/`.
 
 ## Headline results
 
@@ -89,7 +90,7 @@ hardware-offload case. EDP improves up to **197× (software)** at N=60k.
 4. **iptables O(N) is per-flow** — fresh flows used so the walk is paid per task (matches
    kube-proxy on new connections); long-lived flows amortize via conntrack.
 
-## Artifacts (in results_aws_nodeb/)
+## Artifacts (in results/)
 `mec_xnode_results.csv` + `mec_xnode_plot.png` (cross-VM, NEW) · `mec_results.csv`/`mec_plot.png`
 · `crossover_results.csv`/`crossover_plot.png` · `cache_fanout.csv`/`cache_plot.png`
 · `edp_results.csv`/`edp_plot.png` · `run.log`, `xnode.log` (full execution traces).
@@ -105,8 +106,8 @@ eDAG-MEC (connect4+eBPF cache). Two regimes reported honestly:
 - **CachOf's coarse subtasks (seconds-scale):** makespan ≈ 2.9 s for all arms →
   their "hit=0" assumption is *safe*; our kernel cache makes it physically true.
 - **Dense-edge fine-grained subtasks:** baseline makespan climbs O(N)
-  (3.5 ms→25.3 ms over N=100→60k) while eDAG tracks CachOf-ideal (flat ~3–4 ms);
-  **EDP improves 15×→141× (software), up to ~941× (projected HW offload)**.
+  (3.2 ms→22.2 ms over N=100→60k) while eDAG tracks CachOf-ideal (flat ~3–4 ms);
+  **EDP improves 7×→102× (software), up to ~680× (projected HW offload)**.
 
 Artifacts: `energy_vs_basepaper.md`, `energy_vs_basepaper_plot.png`,
 `energy_vs_basepaper_{coarse,fine}.csv`.

@@ -2,9 +2,11 @@ import csv, numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import os as _os
+R = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "results")
 
 N, ipt, xdp = [], [], []
-with open("crossover_results.csv") as f:
+with open(_os.path.join(R,"crossover_results.csv")) as f:
     for r in csv.DictReader(f):
         N.append(int(r["N"])); ipt.append(float(r["iptables_us"])); xdp.append(float(r["xdp_us"]))
 N=np.array(N); ipt=np.array(ipt); xdp=np.array(xdp)
@@ -33,5 +35,5 @@ ax1.annotate(f"iptables ≈ {slope_ns:.1f} ns/rule × N\nXDP ≈ {xdp.mean():.1f
              fontsize=10, bbox=dict(boxstyle="round", fc="#fdf2e9", ec="#c0392b"))
 fig.suptitle("eDAG-MEC: O(1) XDP data plane vs O(N) iptables — where eBPF prevails at the edge", fontsize=13, fontweight="bold")
 fig.tight_layout()
-fig.savefig("crossover_plot.png", dpi=140)
-print("saved crossover_plot.png")
+fig.savefig(_os.path.join(R,"crossover_plot.png"), dpi=140)
+print("saved", _os.path.join(R,"crossover_plot.png"))

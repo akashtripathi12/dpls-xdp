@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # run_all.sh — turnkey: compile eBPF, build+run all benches, regenerate all plots.
-# HANDOFF §6-E ("make bench"). Run as ROOT on Ubuntu 24.04 (kernel >=6.6, cgroup v2).
+# Run as ROOT on Ubuntu 24.04 (kernel >=6.6, cgroup v2).
 #
-#   sudo bash run_all.sh            # full suite
-#   sudo bash run_all.sh --setup    # also apt-install the toolchain first
+#   sudo bash scripts/run_all.sh            # full single-host suite
+#   sudo bash scripts/run_all.sh --setup    # also apt-install the toolchain first
 #
+# All artifacts (CSVs + PNGs) are written to results/. Cross-VM run: scripts/run_xnode.sh
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."                 # repo root (script lives in scripts/)
+ROOT="$PWD"; RES="$ROOT/results"; mkdir -p "$RES"
 HR() { printf '\n========== %s ==========\n' "$1"; }
 
 if [[ "${1:-}" == "--setup" ]]; then
@@ -33,24 +35,25 @@ done
 
 HR "1/4 CROSSOVER  (iptables O(N) vs XDP O(1))"
 go build -o /tmp/crossover ./cmd/crossover_bench
-/tmp/crossover --pings 3000 --csv crossover_results.csv
-python3 plot_crossover.py
+/tmp/crossover --pings 3000 --csv "$RES/crossover_results.csv"
+python3 analysis/plot_crossover.py
 
 HR "2/4 MEC MULTI-NODE  (connect4 O(1) vs kube-proxy O(N))"
 mount -t cgroup2 none /tmp/cg2 2>/dev/null || true
 mkdir -p /tmp/cg2/dpls
 go build -o /tmp/mec ./cmd/mec_bench
-/tmp/mec --pings 3000 --csv mec_results.csv
-python3 plot_mec.py
+/tmp/mec --pings 3000 --csv "$RES/mec_results.csv"
+python3 analysis/plot_mec.py
 
 HR "3/4 CACHE vs CachOf  (eBPF kernel cache vs app cache)"
 go build -o /tmp/cache ./cmd/cache_bench
-/tmp/cache --reps 2000
-python3 plot_cache.py
+/tmp/cache --reps 2000                 # writes cache_fanout.csv + cache_payload.csv to CWD
+mv -f cache_fanout.csv cache_payload.csv "$RES/"
+python3 analysis/plot_cache.py
 
-HR "4/4 ENERGY / EDP  (HANDOFF §6-A — derived from measured CSVs)"
-python3 analyze_energy_edp.py
+HR "4/4 ENERGY / EDP  (derived from the measured CSVs above)"
+python3 analysis/analyze_energy_edp.py          # -> results/edp_results.csv, edp_plot.png
+python3 analysis/energy_vs_basepaper.py         # -> results/energy_vs_basepaper_*.{csv,png}
 
-HR "DONE — artifacts"
-ls -la *_plot.png *_results.csv edp_*.csv crossover_results.csv 2>/dev/null || true
-echo "Pull these PNGs back with scp to view."
+HR "DONE — artifacts in results/"
+ls -la "$RES"/*_plot.png "$RES"/*_results.csv 2>/dev/null || true

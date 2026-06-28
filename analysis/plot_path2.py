@@ -1,8 +1,10 @@
 import csv, sys, numpy as np, matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import os as _os
+R = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "results")
 
-src = sys.argv[1] if len(sys.argv) > 1 else "path2_results.csv"
+src = sys.argv[1] if len(sys.argv) > 1 else _os.path.join(R,"path2_results.csv")
 N, app, ker = [], [], []
 with open(src) as f:
     for r in csv.DictReader(f):
@@ -20,4 +22,4 @@ ax.annotate(f"app ≈ {(app[-1]-app[0])/(N[-1]-N[0]):.2f} µs/consumer (linear)\
             f"Path-2 {app[-1]/ker[-1]:.1f}× cheaper at N={N[-1]} (1 syscall)",
     xy=(N[-1],app[-1]), xytext=(2, app[-1]*0.62),
     fontsize=10, bbox=dict(boxstyle="round",fc="#eafaf1",ec="#27ae60"))
-fig.tight_layout(); fig.savefig("path2_plot.png",dpi=140); print("saved path2_plot.png")
+fig.tight_layout(); fig.savefig(_os.path.join(R,"path2_plot.png"),dpi=140); print("saved", _os.path.join(R,"path2_plot.png"))

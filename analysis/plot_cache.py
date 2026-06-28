@@ -1,6 +1,8 @@
 import csv, numpy as np, matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import os as _os
+R = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "results")
 
 def load(p):
     X,a,e=[],[],[]
@@ -10,8 +12,8 @@ def load(p):
             X.append(int(k[0])); a.append(float(k[1])); e.append(float(k[2]))
     return np.array(X),np.array(a),np.array(e)
 
-N,appN,ebN=load("cache_fanout.csv")
-D,appD,ebD=load("cache_payload.csv")
+N,appN,ebN=load(_os.path.join(R,"cache_fanout.csv"))
+D,appD,ebD=load(_os.path.join(R,"cache_payload.csv"))
 print(f"app per-consumer ~{(appN[-1]-appN[0])/(N[-1]-N[0]):.2f} us  | ebpf per-consumer ~{(ebN[-1]-ebN[0])/(N[-1]-N[0]):.2f} us")
 
 fig,(ax1,ax2)=plt.subplots(1,2,figsize=(13,5))
@@ -40,4 +42,4 @@ ax2.set_ylim(bottom=-10)
 
 fig.suptitle("eDAG-MEC kernel cache vs CachOf-style application cache — realising the 'free cache hit' assumption",
     fontsize=13,fontweight="bold")
-fig.tight_layout(); fig.savefig("cache_plot.png",dpi=140); print("saved cache_plot.png")
+fig.tight_layout(); fig.savefig(_os.path.join(R,"cache_plot.png"),dpi=140); print("saved", _os.path.join(R,"cache_plot.png"))

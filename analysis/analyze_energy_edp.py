@@ -48,7 +48,8 @@ def fanout_for_N(N):       # consumers per produced result at cluster size N
 # ----------------------------------------------------------------------------
 # Load MEASURED data and fit the O(N)/O(1) models ----------------------------
 # ----------------------------------------------------------------------------
-HERE = os.path.dirname(os.path.abspath(__file__))
+# I/O lives in the repo's results/ directory (this script is in analysis/).
+HERE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
 
 def _read_csv(name):
     with open(os.path.join(HERE, name)) as f:
