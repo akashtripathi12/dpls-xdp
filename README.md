@@ -119,6 +119,7 @@ See `make help` for individual targets.
 
 ## Documentation
 
+- **[docs/FULL_REPORT.md](docs/FULL_REPORT.md) — single complete report** (all experiments, graphs, reproduction, caveats).
 - [docs/RESULTS_AWS.md](docs/RESULTS_AWS.md) — final AWS-hardware results, every experiment.
 - [docs/energy_vs_basepaper.md](docs/energy_vs_basepaper.md) — energy/EDP on CachOf's *own* cost model.
 - [docs/comprehensive_experiments.md](docs/comprehensive_experiments.md) — energy proxy + C3 deep dive.
