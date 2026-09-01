@@ -1,0 +1,5 @@
+config,mean_makespan_ms,deadline_sat_pct,outcome
+Full (connect4 + eBPF cache),3.951,100.0,meets deadline
+Without sender bypass (kube-proxy),3.975,100.0,meets deadline
+Without cache (app-level serve),22.218,0.0,misses
+Without DAG-GC (ref-count eviction),,,Fails (Proposition 1)

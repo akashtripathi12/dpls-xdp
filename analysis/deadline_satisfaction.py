@@ -46,7 +46,7 @@ def collect_makespans_ms(episodes, N):
     out = {a: [] for a in ARMS}
     for ep in range(episodes):
         for arm in ARMS:
-            rng = random.Random((N << 20) ^ (ep << 4) ^ hash(arm) & 0xffff)
+            rng = random.Random((N << 20) ^ (ep << 4) ^ E._ARM_SEED[arm])
             ms_s, _, _ = E.makespan_and_energy(rng, arm, CN_SCALE)
             out[arm].append(ms_s * 1e3)   # seconds -> milliseconds
     return out
