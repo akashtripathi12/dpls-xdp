@@ -76,6 +76,16 @@ This proves that evaluating 500 sequential `iptables` rules adds a pure linear C
 By analyzing the `Mock` baseline, we can mathematically isolate the exact cost of the DNAT Engine:
 `501.04µs` (Total Latency) - `93.469µs` (Direct IP Latency) = **`407.57µs`**. 
 
+> **Attribution note (to keep the two shares distinct — do not conflate them):**
+> - The **84.2%** figure above is the *total* eBPF saving: `422.04 / 501.04 = 84.23%`.
+> - The **DNAT+conntrack engine alone** accounts for `407.57 / 501.04 = ` **`81.3%`** of the baseline latency.
+> - The pure `O(N)` chain-walk accounts for `14.46 / 501.04 = ` **`2.9%`**.
+>
+> So the DNAT share is **81.3%**, and the total eBPF saving is **84.2%** — these are two
+> different denominators-of-the-same-base and must not be bonded to the same number
+> (the paper's Results text / Figure 3.2 caption should attribute **81.3%** to the
+> 407.57 µs DNAT isolate, not 84.2%).
+
 ### Key Finding: The "Smoking Gun" for Thesis Defense
 The standard academic argument against `iptables` focuses almost entirely on its linear `O(N)` scaling. However, our empirical deconstruction proves that **the true catastrophic latency penalty of Kubernetes at the edge is Destination NAT (DNAT) and Conntrack**. 
 

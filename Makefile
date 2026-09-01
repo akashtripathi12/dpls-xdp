@@ -40,6 +40,7 @@ analysis:
 	python3 analysis/plot_xnode.py
 	python3 analysis/analyze_energy_edp.py
 	python3 analysis/energy_vs_basepaper.py
+	python3 analysis/deadline_satisfaction.py
 
 clean:
 	rm -f $(BPF_OBJ)
