@@ -124,6 +124,7 @@ See `make help` for individual targets.
 - [docs/energy_vs_basepaper.md](docs/energy_vs_basepaper.md) — energy/EDP on CachOf's *own* cost model.
 - [docs/comprehensive_experiments.md](docs/comprehensive_experiments.md) — energy proxy + C3 deep dive.
 - [docs/crossover_experiment.md](docs/crossover_experiment.md) · [docs/mec_multinode_experiment.md](docs/mec_multinode_experiment.md) · [docs/cache_vs_basepapers.md](docs/cache_vs_basepapers.md) · [docs/scalability_benchmarks.md](docs/scalability_benchmarks.md)
+- [docs/PRESENTATION_GRAPHS_GUIDE.md](docs/PRESENTATION_GRAPHS_GUIDE.md) — presenter's guide: how each results graph was obtained and why it has the shape it has.
 - [docs/HANDOFF.md](docs/HANDOFF.md) — project state, environment notes, remaining backlog.
 - [docs/RECOVERY_STATUS.md](docs/RECOVERY_STATUS.md) — artifact-recovery ledger (what's recovered / reconstructed / unrecoverable).
 - [docs/C3_BENCHMARK_RUNBOOK.md](docs/C3_BENCHMARK_RUNBOOK.md) · [docs/ENERGY_BENCHMARK_RUNBOOK.md](docs/ENERGY_BENCHMARK_RUNBOOK.md) — how to run the C3/GC and energy benches.
